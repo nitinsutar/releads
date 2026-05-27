@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, Home, TrendingUp, UserRoundCheck } from "lucide-react";
+import { CalendarClock, Columns3, Home, TrendingUp, UserRoundCheck } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useCRMData } from "@/contexts/data-context";
 import { Heading, StatCard, StatusBadge, prettyDate } from "@/components/ui";
@@ -16,11 +16,13 @@ export default function DashboardPage() {
   const metrics = {
     leads: leads.length,
     new: leads.filter((lead) => lead.status === "New Lead").length,
+    hot: leads.filter((lead) => lead.priority === "Hot").length,
+    overdue: leads.filter((lead) => lead.followupDate && lead.followupDate < today && lead.status !== "Lost" && lead.status !== "Booked / Closed").length,
     assigned: leads.filter((lead) => Boolean(lead.assignedTo)).length,
     followups: leads.filter((lead) => lead.followupDate && lead.followupDate >= today).length
   };
   const title = user.role === "super_admin" ? "Platform Dashboard" : user.role === "builder_admin" ? "Company Dashboard" : user.role === "sales" ? "My Sales Dashboard" : user.role === "broker" ? "Channel Partner Dashboard" : "My Home Journey";
-  const description = user.role === "customer" ? "View your enquiry and assigned contact details." : "Phase 1 overview for lead capture, assignment and follow-up tracking.";
+  const description = user.role === "customer" ? "View your enquiry and assigned contact details." : "Phase 2 overview for priority leads, follow-ups and pipeline movement.";
 
   if (user.role === "super_admin") {
     return (
@@ -43,8 +45,8 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Leads" value={metrics.leads} hint="Visible in your workspace" icon={<TrendingUp className="h-5 w-5" />} />
         <StatCard label="New Leads" value={metrics.new} hint="Require first contact" />
-        <StatCard label="Assigned Leads" value={metrics.assigned} hint="Owned by a sales user" />
-        <StatCard label="Scheduled Follow-ups" value={metrics.followups} hint="Date captured on lead" icon={<CalendarClock className="h-5 w-5" />} />
+        <StatCard label="Hot Leads" value={metrics.hot} hint="Needs fast sales attention" />
+        <StatCard label="Follow-ups Today+" value={metrics.followups} hint={`${metrics.overdue} overdue`} icon={<CalendarClock className="h-5 w-5" />} />
         <StatCard label="Active Projects" value={projects.filter((project) => project.status === "Active").length} />
       </div>
       <div className="mt-7 grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
@@ -60,9 +62,14 @@ export default function DashboardPage() {
           </div>
         </section>
         <section className="card p-5">
-          <p className="text-sm font-semibold text-brand-600">Future phase placeholder</p>
-          <h2 className="mt-2 font-semibold">Pipeline and reports</h2>
-          <p className="mt-3 text-sm leading-relaxed text-slate-500">Kanban, priority scoring, overdue follow-ups, source analytics, booking reports and exports are intentionally held for later phases.</p>
+          <p className="text-sm font-semibold text-brand-600">Phase 2 live</p>
+          <h2 className="mt-2 font-semibold">Pipeline and performance</h2>
+          <p className="mt-3 text-sm leading-relaxed text-slate-500">Use the Kanban pipeline for stage movement, follow-up workspace for overdue calls, and reports for broker/salesperson tracking.</p>
+          <div className="mt-5 grid gap-3">
+            <Link href="/dashboard/pipeline" className="btn-secondary justify-center"><Columns3 className="h-4 w-4" /> Open pipeline</Link>
+            <Link href="/dashboard/followups" className="btn-secondary justify-center"><CalendarClock className="h-4 w-4" /> Follow-ups</Link>
+            <Link href="/dashboard/reports" className="btn-primary justify-center">View reports</Link>
+          </div>
         </section>
       </div>
     </>
