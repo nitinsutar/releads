@@ -35,6 +35,14 @@ A deployment-ready MVP for Indian real estate builders to manage enquiries from 
 - Customer document placeholders for KYC and booking paperwork
 - Broker commission placeholders connected to broker leads/bookings
 
+## Phase 4 Included
+
+- Lead report KPI cards for total, booked, lost, open pipeline, hot leads and site visits
+- Leads by status and leads by source breakdowns
+- Broker-wise and salesperson-wise conversion tracking
+- Booked and lost lead summary table
+- CSV export for visible leads within the logged-in role permissions
+
 ## Quick Start
 
 Install packages and run the Next.js application:
