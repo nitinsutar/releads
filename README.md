@@ -1,6 +1,6 @@
 # Real Estate Lead Management CRM
 
-A deployment-ready Phase 1 MVP for Indian real estate builders to manage enquiries from capture to assignment and follow-up. It is built with Next.js, React, Tailwind CSS, and a Supabase PostgreSQL/Auth backend schema.
+A deployment-ready MVP for Indian real estate builders to manage enquiries from capture to assignment, follow-up and pipeline tracking. It is built with Next.js, React, Tailwind CSS, and a Supabase PostgreSQL/Auth backend schema.
 
 ## Phase 1 MVP Included
 
@@ -14,6 +14,16 @@ A deployment-ready Phase 1 MVP for Indian real estate builders to manage enquiri
 - Dummy seed data so dashboards are usable immediately
 - Placeholders for inventory, site visits, bookings, reports, exports, documents, commissions, subscriptions and brochure delivery
 - Supabase migration with tables and row-level security policies for production data isolation
+
+## Phase 2 Included
+
+- Lead pipeline Kanban board across the full enquiry-to-booking lifecycle
+- Lead search and filters by status, priority, project and source
+- Hot/Warm/Cold priority controls on lead creation and updates
+- Today, overdue and upcoming follow-up workspace
+- Broker-wise and salesperson-wise lead tracking
+- Lead source performance snapshot
+- Lead activity timeline combining status changes, field updates and notes
 
 ## Quick Start
 
