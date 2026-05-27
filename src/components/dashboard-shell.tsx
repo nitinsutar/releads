@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect } from "react";
-import { Bell, BriefcaseBusiness, Building2, CalendarClock, ChevronDown, CircleUserRound, FileText, FolderOpen, Home, LogOut, Settings, Users } from "lucide-react";
+import { Bell, BriefcaseBusiness, Building2, CalendarClock, ChartNoAxesColumnIncreasing, ChevronDown, CircleUserRound, Columns3, FileText, FolderOpen, Home, LogOut, Settings, Users } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { roleLabels, Role } from "@/lib/types";
 
@@ -19,18 +19,24 @@ const navigation: Record<Role, { label: string; href: string; icon: typeof Home 
     { label: "Company Dashboard", href: "/dashboard", icon: Home },
     { label: "Projects", href: "/dashboard/projects", icon: Building2 },
     { label: "Leads", href: "/dashboard/leads", icon: BriefcaseBusiness },
+    { label: "Pipeline", href: "/dashboard/pipeline", icon: Columns3 },
+    { label: "Follow-ups", href: "/dashboard/followups", icon: CalendarClock },
     { label: "Sales Team", href: "/dashboard/team", icon: Users },
     { label: "Brokers", href: "/dashboard/brokers", icon: CircleUserRound },
+    { label: "Reports", href: "/dashboard/reports", icon: ChartNoAxesColumnIncreasing },
     { label: "Settings", href: "/dashboard/settings", icon: Settings }
   ],
   sales: [
     { label: "My Dashboard", href: "/dashboard", icon: Home },
     { label: "My Leads", href: "/dashboard/leads", icon: BriefcaseBusiness },
-    { label: "Future Follow-ups", href: "/dashboard/followups", icon: CalendarClock }
+    { label: "Pipeline", href: "/dashboard/pipeline", icon: Columns3 },
+    { label: "Today Follow-ups", href: "/dashboard/followups", icon: CalendarClock },
+    { label: "Performance", href: "/dashboard/reports", icon: ChartNoAxesColumnIncreasing }
   ],
   broker: [
     { label: "Broker Dashboard", href: "/dashboard", icon: Home },
     { label: "Add / My Leads", href: "/dashboard/leads", icon: BriefcaseBusiness },
+    { label: "Lead Tracking", href: "/dashboard/reports", icon: ChartNoAxesColumnIncreasing },
     { label: "Project Resources", href: "/dashboard/resources", icon: FolderOpen },
     { label: "Broker Profile", href: "/dashboard/settings", icon: Settings }
   ],
