@@ -10,10 +10,15 @@ import { Heading, prettyDate, PriorityBadge, StatusBadge } from "./ui";
 
 export function LeadTablePage() {
   const { user } = useAuth();
-  const { data, leadsFor, projectsFor, addLead, updateLead, addNote } = useCRMData();
+  const { data, leadsFor, projectsFor, addLead, updateLead, addNote, scheduleSiteVisit, markSiteVisitDone, markBooked, markLost, addDocumentPlaceholder } = useCRMData();
   const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState<string>();
   const [note, setNote] = useState("");
+  const [visitDate, setVisitDate] = useState("");
+  const [visitNotes, setVisitNotes] = useState("");
+  const [bookingAmount, setBookingAmount] = useState("INR 5,00,000");
+  const [lostReason, setLostReason] = useState("");
+  const [documentName, setDocumentName] = useState("");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [priority, setPriority] = useState("all");
@@ -34,173 +39,31 @@ export function LeadTablePage() {
     const normalized = query.trim().toLowerCase();
     return leads.filter((lead) => {
       const customerMatch = [lead.customerName, lead.phone, lead.email, lead.source, lead.id].some((value) => value.toLowerCase().includes(normalized));
-      return (!normalized || customerMatch)
-        && (status === "all" || lead.status === status)
-        && (priority === "all" || lead.priority === priority)
-        && (projectId === "all" || lead.projectId === projectId)
-        && (source === "all" || lead.source === source);
+      return (!normalized || customerMatch) && (status === "all" || lead.status === status) && (priority === "all" || lead.priority === priority) && (projectId === "all" || lead.projectId === projectId) && (source === "all" || lead.source === source);
     });
   }, [leads, priority, projectId, query, source, status]);
 
   return (
     <>
-      <Heading
-        title={user.role === "broker" ? "My Submitted Leads" : user.role === "customer" ? "My Enquiry" : "Lead Management"}
-        description="Phase 2 adds search, filters, priority tracking and lead activity history."
-        action={allowCreate && <button onClick={() => setShowCreate((open) => !open)} className="btn-primary"><Plus className="h-4 w-4" /> New lead</button>}
-      />
+      <Heading title={user.role === "broker" ? "My Submitted Leads" : user.role === "customer" ? "My Enquiry" : "Lead Management"} description="Phase 3 lead workflow with visits, bookings, inventory and documents." action={allowCreate && <button onClick={() => setShowCreate((open) => !open)} className="btn-primary"><Plus className="h-4 w-4" /> New lead</button>} />
       {showCreate && <LeadForm projects={projects} team={team} brokers={brokers} canAssign={canAssignLeads(user)} onSubmit={(lead) => { addLead(user, lead); setShowCreate(false); }} />}
-      <section className="card mb-5 p-4">
-        <div className="grid gap-3 md:grid-cols-[1.3fr_repeat(4,minmax(0,1fr))]">
-          <label className="relative">
-            <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
-            <input className="field pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by name, phone, email, source or lead ID" />
-          </label>
-          <select className="field" value={status} onChange={(event) => setStatus(event.target.value)}>
-            <option value="all">All statuses</option>
-            {leadStatuses.map((item) => <option key={item}>{item}</option>)}
-          </select>
-          <select className="field" value={priority} onChange={(event) => setPriority(event.target.value)}>
-            <option value="all">All priorities</option>
-            {priorities.map((item) => <option key={item}>{item}</option>)}
-          </select>
-          <select className="field" value={projectId} onChange={(event) => setProjectId(event.target.value)}>
-            <option value="all">All projects</option>
-            {projects.map((project) => <option value={project.id} key={project.id}>{project.name}</option>)}
-          </select>
-          <select className="field" value={source} onChange={(event) => setSource(event.target.value)}>
-            <option value="all">All sources</option>
-            {sources.map((item) => <option key={item}>{item}</option>)}
-          </select>
-        </div>
-      </section>
-      <section className="card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
-              <tr>{["Customer Name", "Project", "Source", "Assigned To", "Broker", "Priority", "Status", "Follow-up Date", "Last Updated", "Actions"].map((label) => <th key={label} className="whitespace-nowrap px-5 py-4 font-semibold">{label}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredLeads.map((lead) => (
-                <tr key={lead.id} className="hover:bg-slate-50/70">
-                  <td className="px-5 py-4"><p className="font-semibold text-slate-900">{lead.customerName}</p><p className="mt-1 text-xs text-slate-400">{lead.phone}</p></td>
-                  <td className="whitespace-nowrap px-5 py-4">{data.projects.find((project) => project.id === lead.projectId)?.name ?? "-"}</td>
-                  <td className="whitespace-nowrap px-5 py-4 text-slate-500">{lead.source}</td>
-                  <td className="whitespace-nowrap px-5 py-4 text-slate-500">{data.users.find((member) => member.id === lead.assignedTo)?.name ?? "Unassigned"}</td>
-                  <td className="whitespace-nowrap px-5 py-4 text-slate-500">{data.users.find((member) => member.id === lead.brokerId)?.name ?? "-"}</td>
-                  <td className="px-5 py-4"><PriorityBadge priority={lead.priority} /></td>
-                  <td className="px-5 py-4"><StatusBadge status={lead.status} /></td>
-                  <td className="whitespace-nowrap px-5 py-4 text-slate-500">{prettyDate(lead.followupDate)}</td>
-                  <td className="whitespace-nowrap px-5 py-4 text-slate-500">{prettyDate(lead.updatedAt)}</td>
-                  <td className="px-5 py-4"><button onClick={() => setSelected(lead.id)} className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600"><Eye className="h-4 w-4" /> View</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!filteredLeads.length && <p className="p-10 text-center text-sm text-slate-500">No leads match the current filters.</p>}
-        </div>
-      </section>
-      {current && (
-        <LeadDetails
-          lead={current}
-          allowWorkflow={allowWorkflow}
-          allowAssign={canAssignLeads(user)}
-          team={team}
-          data={data}
-          note={note}
-          setNote={setNote}
-          onClose={() => { setSelected(undefined); setNote(""); }}
-          onUpdate={(updates) => updateLead(user, current.id, updates)}
-          onNote={() => { addNote(user, current.id, note); setNote(""); }}
-        />
-      )}
+      <section className="card mb-5 p-4"><div className="grid gap-3 md:grid-cols-[1.3fr_repeat(4,minmax(0,1fr))]"><label className="relative"><Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" /><input className="field pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by name, phone, email, source or lead ID" /></label><select className="field" value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">All statuses</option>{leadStatuses.map((item) => <option key={item}>{item}</option>)}</select><select className="field" value={priority} onChange={(event) => setPriority(event.target.value)}><option value="all">All priorities</option>{priorities.map((item) => <option key={item}>{item}</option>)}</select><select className="field" value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="all">All projects</option>{projects.map((project) => <option value={project.id} key={project.id}>{project.name}</option>)}</select><select className="field" value={source} onChange={(event) => setSource(event.target.value)}><option value="all">All sources</option>{sources.map((item) => <option key={item}>{item}</option>)}</select></div></section>
+      <section className="card overflow-hidden"><div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400"><tr>{["Customer Name", "Project", "Source", "Assigned To", "Broker", "Priority", "Status", "Follow-up Date", "Last Updated", "Actions"].map((label) => <th key={label} className="whitespace-nowrap px-5 py-4 font-semibold">{label}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{filteredLeads.map((lead) => <tr key={lead.id} className="hover:bg-slate-50/70"><td className="px-5 py-4"><p className="font-semibold text-slate-900">{lead.customerName}</p><p className="mt-1 text-xs text-slate-400">{lead.phone}</p></td><td className="whitespace-nowrap px-5 py-4">{data.projects.find((project) => project.id === lead.projectId)?.name ?? "-"}</td><td className="whitespace-nowrap px-5 py-4 text-slate-500">{lead.source}</td><td className="whitespace-nowrap px-5 py-4 text-slate-500">{data.users.find((member) => member.id === lead.assignedTo)?.name ?? "Unassigned"}</td><td className="whitespace-nowrap px-5 py-4 text-slate-500">{data.users.find((member) => member.id === lead.brokerId)?.name ?? "-"}</td><td className="px-5 py-4"><PriorityBadge priority={lead.priority} /></td><td className="px-5 py-4"><StatusBadge status={lead.status} /></td><td className="whitespace-nowrap px-5 py-4 text-slate-500">{prettyDate(lead.followupDate)}</td><td className="whitespace-nowrap px-5 py-4 text-slate-500">{prettyDate(lead.updatedAt)}</td><td className="px-5 py-4"><button onClick={() => setSelected(lead.id)} className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600"><Eye className="h-4 w-4" /> View</button></td></tr>)}</tbody></table>{!filteredLeads.length && <p className="p-10 text-center text-sm text-slate-500">No leads match the current filters.</p>}</div></section>
+      {current && <LeadDetails lead={current} allowWorkflow={allowWorkflow} allowAssign={canAssignLeads(user)} team={team} data={data} note={note} setNote={setNote} visitDate={visitDate} setVisitDate={setVisitDate} visitNotes={visitNotes} setVisitNotes={setVisitNotes} bookingAmount={bookingAmount} setBookingAmount={setBookingAmount} lostReason={lostReason} setLostReason={setLostReason} documentName={documentName} setDocumentName={setDocumentName} onClose={() => { setSelected(undefined); setNote(""); }} onUpdate={(updates) => updateLead(user, current.id, updates)} onNote={() => { addNote(user, current.id, note); setNote(""); }} onScheduleVisit={() => { scheduleSiteVisit(user, current.id, visitDate, visitNotes); setVisitDate(""); setVisitNotes(""); }} onVisitDone={() => markSiteVisitDone(user, current.id)} onBooked={() => { markBooked(user, current.id, bookingAmount); setBookingAmount("INR 5,00,000"); }} onLost={() => { markLost(user, current.id, lostReason); setLostReason(""); }} onDocument={() => { addDocumentPlaceholder(user, current.id, documentName); setDocumentName(""); }} />}
     </>
   );
 }
 
 function LeadForm({ projects, team, brokers, canAssign, onSubmit }: { projects: ReturnType<typeof useCRMData>["data"]["projects"]; team: ReturnType<typeof useCRMData>["data"]["users"]; brokers: ReturnType<typeof useCRMData>["data"]["users"]; canAssign: boolean; onSubmit: (lead: Omit<Lead, "id" | "companyId" | "createdBy" | "createdAt" | "updatedAt">) => void }) {
-  return (
-    <form className="card mb-6 grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4" onSubmit={(event) => {
-      event.preventDefault();
-      const value = new FormData(event.currentTarget);
-      onSubmit({
-        customerName: String(value.get("customerName")), phone: String(value.get("phone")), email: String(value.get("email")),
-        projectId: String(value.get("projectId")), source: String(value.get("source")), assignedTo: String(value.get("assignedTo") || "") || undefined,
-        brokerId: String(value.get("brokerId") || "") || undefined, priority: String(value.get("priority")) as Lead["priority"], status: "New Lead",
-        followupDate: String(value.get("followupDate") || "") || undefined, budgetRange: String(value.get("budgetRange")), requirement: String(value.get("requirement")) as Lead["requirement"]
-      });
-    }}>
-      <input required name="customerName" className="field" placeholder="Customer name" />
-      <input required name="phone" className="field" placeholder="Phone number" />
-      <input required type="email" name="email" className="field" placeholder="Email address" />
-      <select required name="projectId" className="field"><option value="">Project interested in</option>{projects.map((project) => <option value={project.id} key={project.id}>{project.name}</option>)}</select>
-      <input required name="source" className="field" placeholder="Lead source" />
-      <select name="priority" className="field">{priorities.map((item) => <option key={item}>{item}</option>)}</select>
-      <select name="requirement" className="field">{requirements.map((item) => <option key={item}>{item}</option>)}</select>
-      <input name="budgetRange" className="field" placeholder="Budget range" />
-      <input type="date" name="followupDate" className="field" />
-      {canAssign && <select name="assignedTo" className="field"><option value="">Assign salesperson</option>{team.map((member) => <option value={member.id} key={member.id}>{member.name}</option>)}</select>}
-      {canAssign && <select name="brokerId" className="field"><option value="">Select broker (optional)</option>{brokers.map((member) => <option value={member.id} key={member.id}>{member.name}</option>)}</select>}
-      <button className="btn-primary">Create lead</button>
-    </form>
-  );
+  return <form className="card mb-6 grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4" onSubmit={(event) => { event.preventDefault(); const value = new FormData(event.currentTarget); onSubmit({ customerName: String(value.get("customerName")), phone: String(value.get("phone")), email: String(value.get("email")), projectId: String(value.get("projectId")), source: String(value.get("source")), assignedTo: String(value.get("assignedTo") || "") || undefined, brokerId: String(value.get("brokerId") || "") || undefined, priority: String(value.get("priority")) as Lead["priority"], status: "New Lead", followupDate: String(value.get("followupDate") || "") || undefined, budgetRange: String(value.get("budgetRange")), requirement: String(value.get("requirement")) as Lead["requirement"] }); }}><input required name="customerName" className="field" placeholder="Customer name" /><input required name="phone" className="field" placeholder="Phone number" /><input required type="email" name="email" className="field" placeholder="Email address" /><select required name="projectId" className="field"><option value="">Project interested in</option>{projects.map((project) => <option value={project.id} key={project.id}>{project.name}</option>)}</select><input required name="source" className="field" placeholder="Lead source" /><select name="priority" className="field">{priorities.map((item) => <option key={item}>{item}</option>)}</select><select name="requirement" className="field">{requirements.map((item) => <option key={item}>{item}</option>)}</select><input name="budgetRange" className="field" placeholder="Budget range" /><input type="date" name="followupDate" className="field" />{canAssign && <select name="assignedTo" className="field"><option value="">Assign salesperson</option>{team.map((member) => <option value={member.id} key={member.id}>{member.name}</option>)}</select>}{canAssign && <select name="brokerId" className="field"><option value="">Select broker (optional)</option>{brokers.map((member) => <option value={member.id} key={member.id}>{member.name}</option>)}</select>}<button className="btn-primary">Create lead</button></form>;
 }
 
-function LeadDetails({ lead, allowWorkflow, allowAssign, team, data, note, setNote, onClose, onUpdate, onNote }: { lead: Lead; allowWorkflow: boolean; allowAssign: boolean; team: ReturnType<typeof useCRMData>["data"]["users"]; data: ReturnType<typeof useCRMData>["data"]; note: string; setNote: (value: string) => void; onClose: () => void; onUpdate: (updates: Partial<Lead>) => void; onNote: () => void }) {
+function LeadDetails({ lead, allowWorkflow, allowAssign, team, data, note, setNote, visitDate, setVisitDate, visitNotes, setVisitNotes, bookingAmount, setBookingAmount, lostReason, setLostReason, documentName, setDocumentName, onClose, onUpdate, onNote, onScheduleVisit, onVisitDone, onBooked, onLost, onDocument }: { lead: Lead; allowWorkflow: boolean; allowAssign: boolean; team: ReturnType<typeof useCRMData>["data"]["users"]; data: ReturnType<typeof useCRMData>["data"]; note: string; setNote: (value: string) => void; visitDate: string; setVisitDate: (value: string) => void; visitNotes: string; setVisitNotes: (value: string) => void; bookingAmount: string; setBookingAmount: (value: string) => void; lostReason: string; setLostReason: (value: string) => void; documentName: string; setDocumentName: (value: string) => void; onClose: () => void; onUpdate: (updates: Partial<Lead>) => void; onNote: () => void; onScheduleVisit: () => void; onVisitDone: () => void; onBooked: () => void; onLost: () => void; onDocument: () => void }) {
   const notes = useMemo(() => data.notes.filter((item) => item.leadId === lead.id), [data.notes, lead.id]);
-  const timeline = useMemo(() => [
-    ...data.activities.filter((item) => item.leadId === lead.id).map((item) => ({ id: item.id, type: item.type, details: item.details, actorId: item.actorId, createdAt: item.createdAt })),
-    ...notes.map((item) => ({ id: item.id, type: "Note", details: item.text, actorId: item.authorId, createdAt: item.createdAt }))
-  ].sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [data.activities, lead.id, notes]);
-  return (
-    <div className="fixed inset-0 z-20 flex justify-end bg-slate-950/25" onClick={onClose}>
-      <aside className="h-full w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
-        <div className="flex justify-between gap-3">
-          <div><p className="text-xs font-semibold text-brand-600">{lead.id}</p><h2 className="mt-1 text-2xl font-semibold">{lead.customerName}</h2><p className="text-sm text-slate-500">{lead.phone} | {lead.email}</p></div>
-          <button className="btn-secondary h-fit" onClick={onClose}>Close</button>
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2"><PriorityBadge priority={lead.priority} /><StatusBadge status={lead.status} /></div>
-        <div className="mt-6 grid gap-3 rounded-2xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
-          <p><span className="text-slate-400">Project</span><br />{data.projects.find((item) => item.id === lead.projectId)?.name}</p>
-          <p><span className="text-slate-400">Requirement</span><br />{lead.requirement}</p>
-          <p><span className="text-slate-400">Budget</span><br />{lead.budgetRange || "-"}</p>
-          <p><span className="text-slate-400">Follow-up</span><br />{prettyDate(lead.followupDate)}</p>
-        </div>
-        {allowWorkflow && (
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <label><span className="label">Status</span><select className="field" value={lead.status} onChange={(event) => onUpdate({ status: event.target.value as Lead["status"] })}>{leadStatuses.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label><span className="label">Priority</span><select className="field" value={lead.priority} onChange={(event) => onUpdate({ priority: event.target.value as Lead["priority"] })}>{priorities.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label><span className="label">Next follow-up</span><input type="date" className="field" value={lead.followupDate ?? ""} onChange={(event) => onUpdate({ followupDate: event.target.value })} /></label>
-            {allowAssign && <label><span className="label">Assign to</span><select className="field" value={lead.assignedTo ?? ""} onChange={(event) => onUpdate({ assignedTo: event.target.value || undefined, status: "Assigned" })}><option value="">Unassigned</option>{team.map((member) => <option value={member.id} key={member.id}>{member.name}</option>)}</select></label>}
-          </div>
-        )}
-        <section className="mt-8">
-          <h3 className="font-semibold">Notes and follow-ups</h3>
-          {lead.status !== "Booked / Closed" && (
-            <div className="mt-3 flex gap-2"><input className="field" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Add call or follow-up note" /><button onClick={onNote} className="btn-primary">Add</button></div>
-          )}
-          <div className="mt-4 space-y-3">
-            {notes.map((item) => <div key={item.id} className="rounded-xl border border-slate-100 p-3 text-sm"><p>{item.text}</p><p className="mt-1 text-xs text-slate-400">{prettyDate(item.createdAt)} by {data.users.find((member) => member.id === item.authorId)?.name}</p></div>)}
-            {!notes.length && <p className="text-sm text-slate-400">No notes recorded yet.</p>}
-          </div>
-        </section>
-        <section className="mt-8">
-          <h3 className="font-semibold">Activity timeline</h3>
-          <div className="mt-4 space-y-3">
-            {timeline.map((item) => (
-              <div key={item.id} className="rounded-xl bg-slate-50 p-3 text-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-semibold text-slate-800">{item.type}</p>
-                  <p className="text-xs text-slate-400">{prettyDate(item.createdAt)}</p>
-                </div>
-                <p className="mt-1 text-slate-600">{item.details}</p>
-                <p className="mt-1 text-xs text-slate-400">by {data.users.find((member) => member.id === item.actorId)?.name ?? "System"}</p>
-              </div>
-            ))}
-            {!timeline.length && <p className="text-sm text-slate-400">No lead activity yet.</p>}
-          </div>
-        </section>
-      </aside>
-    </div>
-  );
+  const visits = useMemo(() => data.siteVisits.filter((item) => item.leadId === lead.id), [data.siteVisits, lead.id]);
+  const bookings = useMemo(() => data.bookings.filter((item) => item.leadId === lead.id), [data.bookings, lead.id]);
+  const documents = useMemo(() => data.customerDocuments.filter((item) => item.leadId === lead.id), [data.customerDocuments, lead.id]);
+  const units = useMemo(() => data.units.filter((unit) => unit.projectId === lead.projectId), [data.units, lead.projectId]);
+  const timeline = useMemo(() => [...data.activities.filter((item) => item.leadId === lead.id).map((item) => ({ id: item.id, type: item.type, details: item.details, actorId: item.actorId, createdAt: item.createdAt })), ...notes.map((item) => ({ id: item.id, type: "Note", details: item.text, actorId: item.authorId, createdAt: item.createdAt }))].sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [data.activities, lead.id, notes]);
+  return <div className="fixed inset-0 z-20 flex justify-end bg-slate-950/25" onClick={onClose}><aside className="h-full w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}><div className="flex justify-between gap-3"><div><p className="text-xs font-semibold text-brand-600">{lead.id}</p><h2 className="mt-1 text-2xl font-semibold">{lead.customerName}</h2><p className="text-sm text-slate-500">{lead.phone} | {lead.email}</p></div><button className="btn-secondary h-fit" onClick={onClose}>Close</button></div><div className="mt-4 flex flex-wrap gap-2"><PriorityBadge priority={lead.priority} /><StatusBadge status={lead.status} /></div><div className="mt-6 grid gap-3 rounded-2xl bg-slate-50 p-4 text-sm sm:grid-cols-2"><p><span className="text-slate-400">Project</span><br />{data.projects.find((item) => item.id === lead.projectId)?.name}</p><p><span className="text-slate-400">Requirement</span><br />{lead.requirement}</p><p><span className="text-slate-400">Budget</span><br />{lead.budgetRange || "-"}</p><p><span className="text-slate-400">Follow-up</span><br />{prettyDate(lead.followupDate)}</p><p><span className="text-slate-400">Unit interest</span><br />{data.units.find((item) => item.id === lead.unitId)?.unitNumber ?? "-"}</p><p><span className="text-slate-400">Lost reason</span><br />{lead.lostReason ?? "-"}</p></div>{allowWorkflow && <div className="mt-6 grid gap-3 sm:grid-cols-2"><label><span className="label">Status</span><select className="field" value={lead.status} onChange={(event) => onUpdate({ status: event.target.value as Lead["status"] })}>{leadStatuses.map((item) => <option key={item}>{item}</option>)}</select></label><label><span className="label">Priority</span><select className="field" value={lead.priority} onChange={(event) => onUpdate({ priority: event.target.value as Lead["priority"] })}>{priorities.map((item) => <option key={item}>{item}</option>)}</select></label><label><span className="label">Unit interested in</span><select className="field" value={lead.unitId ?? ""} onChange={(event) => onUpdate({ unitId: event.target.value || undefined })}><option value="">No unit linked</option>{units.map((unit) => <option value={unit.id} key={unit.id}>{unit.unitNumber} | {unit.type} | {unit.status}</option>)}</select></label><label><span className="label">Next follow-up</span><input type="date" className="field" value={lead.followupDate ?? ""} onChange={(event) => onUpdate({ followupDate: event.target.value })} /></label>{allowAssign && <label><span className="label">Assign to</span><select className="field" value={lead.assignedTo ?? ""} onChange={(event) => onUpdate({ assignedTo: event.target.value || undefined, status: "Assigned" })}><option value="">Unassigned</option>{team.map((member) => <option value={member.id} key={member.id}>{member.name}</option>)}</select></label>}</div>}{allowWorkflow && <section className="mt-8 rounded-2xl border border-slate-100 p-4"><h3 className="font-semibold">Phase 3 sales workflow</h3><div className="mt-4 grid gap-3 sm:grid-cols-2"><label><span className="label">Site visit date</span><input type="date" className="field" value={visitDate} onChange={(event) => setVisitDate(event.target.value)} /></label><label><span className="label">Visit note</span><input className="field" value={visitNotes} onChange={(event) => setVisitNotes(event.target.value)} placeholder="Sample flat, family visit..." /></label><button className="btn-secondary" onClick={onScheduleVisit}>Schedule site visit</button><button className="btn-secondary" onClick={onVisitDone}>Mark site visit done</button><label><span className="label">Booking amount</span><input className="field" value={bookingAmount} onChange={(event) => setBookingAmount(event.target.value)} /></label><button className="btn-primary self-end" onClick={onBooked}>Mark booked</button><label><span className="label">Lost reason</span><input className="field" value={lostReason} onChange={(event) => setLostReason(event.target.value)} placeholder="Budget mismatch, location..." /></label><button className="btn-secondary self-end" onClick={onLost}>Mark lost</button></div></section>}<section className="mt-8"><h3 className="font-semibold">Site visits</h3><div className="mt-3 space-y-3">{visits.map((visit) => <div key={visit.id} className="rounded-xl bg-slate-50 p-3 text-sm"><p className="font-semibold">{prettyDate(visit.visitDate)} | {visit.status}</p><p className="mt-1 text-slate-500">{visit.notes || "No notes"}</p></div>)}{!visits.length && <p className="text-sm text-slate-400">No site visits scheduled yet.</p>}</div></section><section className="mt-8"><h3 className="font-semibold">Booking status</h3><div className="mt-3 space-y-3">{bookings.map((booking) => <div key={booking.id} className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800"><p className="font-semibold">{booking.status} | {booking.amount}</p><p className="mt-1">Booked on {prettyDate(booking.bookingDate)}</p></div>)}{!bookings.length && <p className="text-sm text-slate-400">No booking recorded yet.</p>}</div></section><section className="mt-8"><h3 className="font-semibold">Customer documents</h3>{allowWorkflow && <div className="mt-3 flex gap-2"><input className="field" value={documentName} onChange={(event) => setDocumentName(event.target.value)} placeholder="PAN Card, Aadhaar, Booking Form..." /><button className="btn-secondary" onClick={onDocument}>Add slot</button></div>}<div className="mt-3 space-y-3">{documents.map((document) => <div key={document.id} className="flex items-center justify-between rounded-xl border border-slate-100 p-3 text-sm"><span>{document.name}</span><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{document.status}</span></div>)}{!documents.length && <p className="text-sm text-slate-400">No document placeholders yet.</p>}</div></section><section className="mt-8"><h3 className="font-semibold">Notes and follow-ups</h3>{lead.status !== "Booked / Closed" && <div className="mt-3 flex gap-2"><input className="field" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Add call or follow-up note" /><button onClick={onNote} className="btn-primary">Add</button></div>}<div className="mt-4 space-y-3">{notes.map((item) => <div key={item.id} className="rounded-xl border border-slate-100 p-3 text-sm"><p>{item.text}</p><p className="mt-1 text-xs text-slate-400">{prettyDate(item.createdAt)} by {data.users.find((member) => member.id === item.authorId)?.name}</p></div>)}{!notes.length && <p className="text-sm text-slate-400">No notes recorded yet.</p>}</div></section><section className="mt-8"><h3 className="font-semibold">Activity timeline</h3><div className="mt-4 space-y-3">{timeline.map((item) => <div key={item.id} className="rounded-xl bg-slate-50 p-3 text-sm"><div className="flex items-center justify-between gap-3"><p className="font-semibold text-slate-800">{item.type}</p><p className="text-xs text-slate-400">{prettyDate(item.createdAt)}</p></div><p className="mt-1 text-slate-600">{item.details}</p><p className="mt-1 text-xs text-slate-400">by {data.users.find((member) => member.id === item.actorId)?.name ?? "System"}</p></div>)}{!timeline.length && <p className="text-sm text-slate-400">No lead activity yet.</p>}</div></section></aside></div>;
 }
