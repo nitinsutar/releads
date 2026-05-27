@@ -25,6 +25,16 @@ A deployment-ready MVP for Indian real estate builders to manage enquiries from 
 - Lead source performance snapshot
 - Lead activity timeline combining status changes, field updates and notes
 
+## Phase 3 Included
+
+- Site visit scheduling and site visit done workflow
+- Booking confirmation from leads with amount capture
+- Lost lead reason capture
+- Unit inventory linking on leads and bookings
+- Inventory unit creation for builder admins
+- Customer document placeholders for KYC and booking paperwork
+- Broker commission placeholders connected to broker leads/bookings
+
 ## Quick Start
 
 Install packages and run the Next.js application:
