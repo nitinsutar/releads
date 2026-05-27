@@ -54,7 +54,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
           createdAt: today(),
           updatedAt: today()
         };
-        return { ...current, leads: [nextLead, ...current.leads] };
+        const activity: Activity = {
+          id: id("act"),
+          leadId: nextLead.id,
+          actorId: user.id,
+          type: "Lead Created",
+          details: `${nextLead.customerName} was added from ${nextLead.source}.`,
+          createdAt: today()
+        };
+        return { ...current, leads: [nextLead, ...current.leads], activities: [activity, ...current.activities] };
       });
     },
     updateLead: (user, leadId, updates) => change((current) => {
@@ -76,7 +84,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addNote: (user, leadId, text) => change((current) => {
       if (!text.trim() || !accessibleLeads(current, user).some((lead) => lead.id === leadId)) return current;
       const note: LeadNote = { id: id("note"), leadId, authorId: user.id, text: text.trim(), createdAt: today() };
-      return { ...current, notes: [note, ...current.notes] };
+      const activity: Activity = {
+        id: id("act"),
+        leadId,
+        actorId: user.id,
+        type: "Note Added",
+        details: "A follow-up note was added.",
+        createdAt: today()
+      };
+      return { ...current, notes: [note, ...current.notes], activities: [activity, ...current.activities] };
     }),
     addProject: (user, input) => {
       if (!user.companyId) return;
