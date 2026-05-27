@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Eye, Plus } from "lucide-react";
+import { Eye, Plus, Search } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useCRMData } from "@/contexts/data-context";
 import { canAssignLeads, canManageLeads } from "@/lib/permissions";
-import { Lead, leadStatuses, requirements } from "@/lib/types";
-import { Heading, prettyDate, StatusBadge } from "./ui";
+import { Lead, leadStatuses, priorities, requirements } from "@/lib/types";
+import { Heading, prettyDate, PriorityBadge, StatusBadge } from "./ui";
 
 export function LeadTablePage() {
   const { user } = useAuth();
@@ -14,6 +14,11 @@ export function LeadTablePage() {
   const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState<string>();
   const [note, setNote] = useState("");
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const [priority, setPriority] = useState("all");
+  const [projectId, setProjectId] = useState("all");
+  const [source, setSource] = useState("all");
   if (!user) return null;
 
   const leads = leadsFor(user);
@@ -21,31 +26,69 @@ export function LeadTablePage() {
   const current = leads.find((lead) => lead.id === selected);
   const team = data.users.filter((member) => member.companyId === user.companyId && member.role === "sales");
   const brokers = data.users.filter((member) => member.companyId === user.companyId && member.role === "broker");
+  const sources = Array.from(new Set(leads.map((lead) => lead.source))).sort();
   const allowCreate = canManageLeads(user) && user.role !== "super_admin";
   const allowWorkflow = user.role === "builder_admin" || user.role === "sales";
+
+  const filteredLeads = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return leads.filter((lead) => {
+      const customerMatch = [lead.customerName, lead.phone, lead.email, lead.source, lead.id].some((value) => value.toLowerCase().includes(normalized));
+      return (!normalized || customerMatch)
+        && (status === "all" || lead.status === status)
+        && (priority === "all" || lead.priority === priority)
+        && (projectId === "all" || lead.projectId === projectId)
+        && (source === "all" || lead.source === source);
+    });
+  }, [leads, priority, projectId, query, source, status]);
 
   return (
     <>
       <Heading
         title={user.role === "broker" ? "My Submitted Leads" : user.role === "customer" ? "My Enquiry" : "Lead Management"}
-        description="Phase 1 lead capture, listing, assignment, follow-up date and notes."
+        description="Phase 2 adds search, filters, priority tracking and lead activity history."
         action={allowCreate && <button onClick={() => setShowCreate((open) => !open)} className="btn-primary"><Plus className="h-4 w-4" /> New lead</button>}
       />
       {showCreate && <LeadForm projects={projects} team={team} brokers={brokers} canAssign={canAssignLeads(user)} onSubmit={(lead) => { addLead(user, lead); setShowCreate(false); }} />}
+      <section className="card mb-5 p-4">
+        <div className="grid gap-3 md:grid-cols-[1.3fr_repeat(4,minmax(0,1fr))]">
+          <label className="relative">
+            <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
+            <input className="field pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by name, phone, email, source or lead ID" />
+          </label>
+          <select className="field" value={status} onChange={(event) => setStatus(event.target.value)}>
+            <option value="all">All statuses</option>
+            {leadStatuses.map((item) => <option key={item}>{item}</option>)}
+          </select>
+          <select className="field" value={priority} onChange={(event) => setPriority(event.target.value)}>
+            <option value="all">All priorities</option>
+            {priorities.map((item) => <option key={item}>{item}</option>)}
+          </select>
+          <select className="field" value={projectId} onChange={(event) => setProjectId(event.target.value)}>
+            <option value="all">All projects</option>
+            {projects.map((project) => <option value={project.id} key={project.id}>{project.name}</option>)}
+          </select>
+          <select className="field" value={source} onChange={(event) => setSource(event.target.value)}>
+            <option value="all">All sources</option>
+            {sources.map((item) => <option key={item}>{item}</option>)}
+          </select>
+        </div>
+      </section>
       <section className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
-              <tr>{["Customer Name", "Project", "Source", "Assigned To", "Broker", "Status", "Follow-up Date", "Last Updated", "Actions"].map((label) => <th key={label} className="whitespace-nowrap px-5 py-4 font-semibold">{label}</th>)}</tr>
+              <tr>{["Customer Name", "Project", "Source", "Assigned To", "Broker", "Priority", "Status", "Follow-up Date", "Last Updated", "Actions"].map((label) => <th key={label} className="whitespace-nowrap px-5 py-4 font-semibold">{label}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {leads.map((lead) => (
+              {filteredLeads.map((lead) => (
                 <tr key={lead.id} className="hover:bg-slate-50/70">
                   <td className="px-5 py-4"><p className="font-semibold text-slate-900">{lead.customerName}</p><p className="mt-1 text-xs text-slate-400">{lead.phone}</p></td>
                   <td className="whitespace-nowrap px-5 py-4">{data.projects.find((project) => project.id === lead.projectId)?.name ?? "-"}</td>
                   <td className="whitespace-nowrap px-5 py-4 text-slate-500">{lead.source}</td>
                   <td className="whitespace-nowrap px-5 py-4 text-slate-500">{data.users.find((member) => member.id === lead.assignedTo)?.name ?? "Unassigned"}</td>
                   <td className="whitespace-nowrap px-5 py-4 text-slate-500">{data.users.find((member) => member.id === lead.brokerId)?.name ?? "-"}</td>
+                  <td className="px-5 py-4"><PriorityBadge priority={lead.priority} /></td>
                   <td className="px-5 py-4"><StatusBadge status={lead.status} /></td>
                   <td className="whitespace-nowrap px-5 py-4 text-slate-500">{prettyDate(lead.followupDate)}</td>
                   <td className="whitespace-nowrap px-5 py-4 text-slate-500">{prettyDate(lead.updatedAt)}</td>
@@ -54,7 +97,7 @@ export function LeadTablePage() {
               ))}
             </tbody>
           </table>
-          {!leads.length && <p className="p-10 text-center text-sm text-slate-500">No leads yet. Create the first enquiry to begin.</p>}
+          {!filteredLeads.length && <p className="p-10 text-center text-sm text-slate-500">No leads match the current filters.</p>}
         </div>
       </section>
       {current && (
@@ -83,7 +126,7 @@ function LeadForm({ projects, team, brokers, canAssign, onSubmit }: { projects: 
       onSubmit({
         customerName: String(value.get("customerName")), phone: String(value.get("phone")), email: String(value.get("email")),
         projectId: String(value.get("projectId")), source: String(value.get("source")), assignedTo: String(value.get("assignedTo") || "") || undefined,
-        brokerId: String(value.get("brokerId") || "") || undefined, priority: "Warm", status: "New Lead",
+        brokerId: String(value.get("brokerId") || "") || undefined, priority: String(value.get("priority")) as Lead["priority"], status: "New Lead",
         followupDate: String(value.get("followupDate") || "") || undefined, budgetRange: String(value.get("budgetRange")), requirement: String(value.get("requirement")) as Lead["requirement"]
       });
     }}>
@@ -92,6 +135,7 @@ function LeadForm({ projects, team, brokers, canAssign, onSubmit }: { projects: 
       <input required type="email" name="email" className="field" placeholder="Email address" />
       <select required name="projectId" className="field"><option value="">Project interested in</option>{projects.map((project) => <option value={project.id} key={project.id}>{project.name}</option>)}</select>
       <input required name="source" className="field" placeholder="Lead source" />
+      <select name="priority" className="field">{priorities.map((item) => <option key={item}>{item}</option>)}</select>
       <select name="requirement" className="field">{requirements.map((item) => <option key={item}>{item}</option>)}</select>
       <input name="budgetRange" className="field" placeholder="Budget range" />
       <input type="date" name="followupDate" className="field" />
@@ -104,6 +148,10 @@ function LeadForm({ projects, team, brokers, canAssign, onSubmit }: { projects: 
 
 function LeadDetails({ lead, allowWorkflow, allowAssign, team, data, note, setNote, onClose, onUpdate, onNote }: { lead: Lead; allowWorkflow: boolean; allowAssign: boolean; team: ReturnType<typeof useCRMData>["data"]["users"]; data: ReturnType<typeof useCRMData>["data"]; note: string; setNote: (value: string) => void; onClose: () => void; onUpdate: (updates: Partial<Lead>) => void; onNote: () => void }) {
   const notes = useMemo(() => data.notes.filter((item) => item.leadId === lead.id), [data.notes, lead.id]);
+  const timeline = useMemo(() => [
+    ...data.activities.filter((item) => item.leadId === lead.id).map((item) => ({ id: item.id, type: item.type, details: item.details, actorId: item.actorId, createdAt: item.createdAt })),
+    ...notes.map((item) => ({ id: item.id, type: "Note", details: item.text, actorId: item.authorId, createdAt: item.createdAt }))
+  ].sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [data.activities, lead.id, notes]);
   return (
     <div className="fixed inset-0 z-20 flex justify-end bg-slate-950/25" onClick={onClose}>
       <aside className="h-full w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
@@ -111,6 +159,7 @@ function LeadDetails({ lead, allowWorkflow, allowAssign, team, data, note, setNo
           <div><p className="text-xs font-semibold text-brand-600">{lead.id}</p><h2 className="mt-1 text-2xl font-semibold">{lead.customerName}</h2><p className="text-sm text-slate-500">{lead.phone} | {lead.email}</p></div>
           <button className="btn-secondary h-fit" onClick={onClose}>Close</button>
         </div>
+        <div className="mt-4 flex flex-wrap gap-2"><PriorityBadge priority={lead.priority} /><StatusBadge status={lead.status} /></div>
         <div className="mt-6 grid gap-3 rounded-2xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
           <p><span className="text-slate-400">Project</span><br />{data.projects.find((item) => item.id === lead.projectId)?.name}</p>
           <p><span className="text-slate-400">Requirement</span><br />{lead.requirement}</p>
@@ -120,6 +169,7 @@ function LeadDetails({ lead, allowWorkflow, allowAssign, team, data, note, setNo
         {allowWorkflow && (
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <label><span className="label">Status</span><select className="field" value={lead.status} onChange={(event) => onUpdate({ status: event.target.value as Lead["status"] })}>{leadStatuses.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label><span className="label">Priority</span><select className="field" value={lead.priority} onChange={(event) => onUpdate({ priority: event.target.value as Lead["priority"] })}>{priorities.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label><span className="label">Next follow-up</span><input type="date" className="field" value={lead.followupDate ?? ""} onChange={(event) => onUpdate({ followupDate: event.target.value })} /></label>
             {allowAssign && <label><span className="label">Assign to</span><select className="field" value={lead.assignedTo ?? ""} onChange={(event) => onUpdate({ assignedTo: event.target.value || undefined, status: "Assigned" })}><option value="">Unassigned</option>{team.map((member) => <option value={member.id} key={member.id}>{member.name}</option>)}</select></label>}
           </div>
@@ -132,6 +182,22 @@ function LeadDetails({ lead, allowWorkflow, allowAssign, team, data, note, setNo
           <div className="mt-4 space-y-3">
             {notes.map((item) => <div key={item.id} className="rounded-xl border border-slate-100 p-3 text-sm"><p>{item.text}</p><p className="mt-1 text-xs text-slate-400">{prettyDate(item.createdAt)} by {data.users.find((member) => member.id === item.authorId)?.name}</p></div>)}
             {!notes.length && <p className="text-sm text-slate-400">No notes recorded yet.</p>}
+          </div>
+        </section>
+        <section className="mt-8">
+          <h3 className="font-semibold">Activity timeline</h3>
+          <div className="mt-4 space-y-3">
+            {timeline.map((item) => (
+              <div key={item.id} className="rounded-xl bg-slate-50 p-3 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-semibold text-slate-800">{item.type}</p>
+                  <p className="text-xs text-slate-400">{prettyDate(item.createdAt)}</p>
+                </div>
+                <p className="mt-1 text-slate-600">{item.details}</p>
+                <p className="mt-1 text-xs text-slate-400">by {data.users.find((member) => member.id === item.actorId)?.name ?? "System"}</p>
+              </div>
+            ))}
+            {!timeline.length && <p className="text-sm text-slate-400">No lead activity yet.</p>}
           </div>
         </section>
       </aside>
