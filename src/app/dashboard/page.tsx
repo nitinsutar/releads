@@ -13,82 +13,11 @@ export default function DashboardPage() {
   const leads = leadsFor(user);
   const projects = projectsFor(user);
   const today = new Date().toISOString().slice(0, 10);
-  const metrics = {
-    leads: leads.length,
-    new: leads.filter((lead) => lead.status === "New Lead").length,
-    hot: leads.filter((lead) => lead.priority === "Hot").length,
-    overdue: leads.filter((lead) => lead.followupDate && lead.followupDate < today && lead.status !== "Lost" && lead.status !== "Booked / Closed").length,
-    assigned: leads.filter((lead) => Boolean(lead.assignedTo)).length,
-    followups: leads.filter((lead) => lead.followupDate && lead.followupDate >= today).length
-  };
+  const metrics = { leads: leads.length, new: leads.filter((lead) => lead.status === "New Lead").length, hot: leads.filter((lead) => lead.priority === "Hot").length, overdue: leads.filter((lead) => lead.followupDate && lead.followupDate < today && lead.status !== "Lost" && lead.status !== "Booked / Closed").length, assigned: leads.filter((lead) => Boolean(lead.assignedTo)).length, followups: leads.filter((lead) => lead.followupDate && lead.followupDate >= today).length };
   const title = user.role === "super_admin" ? "Platform Dashboard" : user.role === "builder_admin" ? "Company Dashboard" : user.role === "sales" ? "My Sales Dashboard" : user.role === "broker" ? "Channel Partner Dashboard" : "My Home Journey";
-  const description = user.role === "customer" ? "View your enquiry and assigned contact details." : "Phase 2 overview for priority leads, follow-ups and pipeline movement.";
-
-  if (user.role === "super_admin") {
-    return (
-      <>
-        <Heading title={title} description="Monitor builder accounts and platform adoption." />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Builder Companies" value={data.companies.length} hint="1 currently on trial" icon={<Home className="h-5 w-5" />} />
-          <StatCard label="Platform Users" value={data.users.length} hint="Across all account roles" icon={<UserRoundCheck className="h-5 w-5" />} />
-          <StatCard label="Total Leads" value={data.leads.length} hint="All registered companies" icon={<TrendingUp className="h-5 w-5" />} />
-          <StatCard label="Active Projects" value={data.projects.filter((project) => project.status === "Active").length} hint="Created by builders" icon={<Home className="h-5 w-5" />} />
-        </div>
-        <CompanyPreview />
-      </>
-    );
-  }
-
-  return (
-    <>
-      <Heading title={title} description={description} action={user.role !== "customer" ? <Link href="/dashboard/leads" className="btn-primary">Manage leads</Link> : undefined} />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total Leads" value={metrics.leads} hint="Visible in your workspace" icon={<TrendingUp className="h-5 w-5" />} />
-        <StatCard label="New Leads" value={metrics.new} hint="Require first contact" />
-        <StatCard label="Hot Leads" value={metrics.hot} hint="Needs fast sales attention" />
-        <StatCard label="Follow-ups Today+" value={metrics.followups} hint={`${metrics.overdue} overdue`} icon={<CalendarClock className="h-5 w-5" />} />
-        <StatCard label="Active Projects" value={projects.filter((project) => project.status === "Active").length} />
-      </div>
-      <div className="mt-7 grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
-        <section className="card overflow-hidden">
-          <div className="flex justify-between border-b border-slate-100 p-5"><h2 className="font-semibold">Recent leads</h2><Link className="text-sm font-semibold text-brand-600" href="/dashboard/leads">View all</Link></div>
-          <div className="divide-y divide-slate-100">
-            {leads.slice(0, 5).map((lead) => (
-              <div key={lead.id} className="flex flex-wrap items-center justify-between gap-3 p-5">
-                <div><p className="font-semibold">{lead.customerName}</p><p className="mt-1 text-xs text-slate-400">{data.projects.find((project) => project.id === lead.projectId)?.name} | Follow-up {prettyDate(lead.followupDate)}</p></div>
-                <StatusBadge status={lead.status} />
-              </div>
-            ))}
-          </div>
-        </section>
-        <section className="card p-5">
-          <p className="text-sm font-semibold text-brand-600">Phase 2 live</p>
-          <h2 className="mt-2 font-semibold">Pipeline and performance</h2>
-          <p className="mt-3 text-sm leading-relaxed text-slate-500">Use the Kanban pipeline for stage movement, follow-up workspace for overdue calls, and reports for broker/salesperson tracking.</p>
-          <div className="mt-5 grid gap-3">
-            <Link href="/dashboard/pipeline" className="btn-secondary justify-center"><Columns3 className="h-4 w-4" /> Open pipeline</Link>
-            <Link href="/dashboard/followups" className="btn-secondary justify-center"><CalendarClock className="h-4 w-4" /> Follow-ups</Link>
-            <Link href="/dashboard/reports" className="btn-primary justify-center">View reports</Link>
-          </div>
-        </section>
-      </div>
-    </>
-  );
+  const description = user.role === "customer" ? "View your enquiry and assigned contact details." : "Overview for priority leads, follow-ups and pipeline movement.";
+  if (user.role === "super_admin") return <><Heading title={title} description="Monitor builder accounts and platform adoption." /><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Builder Companies" value={data.companies.length} hint="1 currently on trial" icon={<Home className="h-5 w-5" />} /><StatCard label="Platform Users" value={data.users.length} hint="Across all account roles" icon={<UserRoundCheck className="h-5 w-5" />} /><StatCard label="Total Leads" value={data.leads.length} hint="All registered companies" icon={<TrendingUp className="h-5 w-5" />} /><StatCard label="Active Projects" value={data.projects.filter((project) => project.status === "Active").length} hint="Created by builders" icon={<Home className="h-5 w-5" />} /></div><CompanyPreview /></>;
+  return <><Heading title={title} description={description} action={user.role !== "customer" ? <Link href="/dashboard/leads" className="btn-primary">Manage leads</Link> : undefined} /><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Total Leads" value={metrics.leads} hint="Visible in your workspace" icon={<TrendingUp className="h-5 w-5" />} /><StatCard label="New Leads" value={metrics.new} hint="Require first contact" /><StatCard label="Hot Leads" value={metrics.hot} hint="Needs fast sales attention" /><StatCard label="Follow-ups Today+" value={metrics.followups} hint={`${metrics.overdue} overdue`} icon={<CalendarClock className="h-5 w-5" />} /><StatCard label="Active Projects" value={projects.filter((project) => project.status === "Active").length} /></div><div className="mt-7 grid gap-6 xl:grid-cols-[1.4fr_0.8fr]"><section className="card overflow-hidden"><div className="flex justify-between border-b border-slate-100 p-5"><h2 className="font-semibold">Recent leads</h2><Link className="text-sm font-semibold text-brand-600" href="/dashboard/leads">View all</Link></div><div className="divide-y divide-slate-100">{leads.slice(0, 5).map((lead) => <div key={lead.id} className="flex flex-wrap items-center justify-between gap-3 p-5"><div><p className="font-semibold">{lead.customerName}</p><p className="mt-1 text-xs text-slate-400">{data.projects.find((project) => project.id === lead.projectId)?.name} | Follow-up {prettyDate(lead.followupDate)}</p></div><StatusBadge status={lead.status} /></div>)}</div></section><section className="card p-5"><p className="text-sm font-semibold text-brand-600">Sales workspace</p><h2 className="mt-2 font-semibold">Pipeline and performance</h2><p className="mt-3 text-sm leading-relaxed text-slate-500">Use the Kanban pipeline for stage movement, follow-up workspace for overdue calls, and reports for broker/salesperson tracking.</p><div className="mt-5 grid gap-3"><Link href="/dashboard/pipeline" className="btn-secondary justify-center"><Columns3 className="h-4 w-4" /> Open pipeline</Link><Link href="/dashboard/followups" className="btn-secondary justify-center"><CalendarClock className="h-4 w-4" /> Follow-ups</Link><Link href="/dashboard/reports" className="btn-primary justify-center">View reports</Link></div></section></div></>;
 }
 
-function CompanyPreview() {
-  const { data } = useCRMData();
-  return (
-    <section className="card mt-7 overflow-hidden">
-      <h2 className="border-b border-slate-100 p-5 font-semibold">Builder accounts</h2>
-      <div className="divide-y divide-slate-100">
-        {data.companies.map((company) => (
-          <div className="flex flex-wrap items-center justify-between gap-3 p-5" key={company.id}>
-            <div><p className="font-semibold">{company.name}</p><p className="text-sm text-slate-500">{company.city} | {company.email}</p></div>
-            <div className="flex items-center gap-3"><span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">{company.paymentStatus}</span><span className="text-sm text-slate-500">{company.plan}</span></div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
+function CompanyPreview() { const { data } = useCRMData(); return <section className="card mt-7 overflow-hidden"><h2 className="border-b border-slate-100 p-5 font-semibold">Builder accounts</h2><div className="divide-y divide-slate-100">{data.companies.map((company) => <div className="flex flex-wrap items-center justify-between gap-3 p-5" key={company.id}><div><p className="font-semibold">{company.name}</p><p className="text-sm text-slate-500">{company.city} | {company.email}</p></div><div className="flex items-center gap-3"><span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">{company.paymentStatus}</span><span className="text-sm text-slate-500">{company.plan}</span></div></div>)}</div></section>; }
