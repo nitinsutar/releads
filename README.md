@@ -43,6 +43,13 @@ A deployment-ready MVP for Indian real estate builders to manage enquiries from 
 - Booked and lost lead summary table
 - CSV export for visible leads within the logged-in role permissions
 
+## Phase 5 Included
+
+- Advanced integrations screen for WhatsApp, Meta Ads, Google Sheets, email/SMS reminders and billing gateway setup
+- Subscription management screen with builder plan and payment status cards
+- Sidebar layout fix so Sign out remains visible while long role menus scroll
+- Polished dashboard copy that avoids implementation-phase labels in the product UI
+
 ## Quick Start
 
 Install packages and run the Next.js application:
