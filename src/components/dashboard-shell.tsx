@@ -20,7 +20,7 @@ const navigation: Record<Role, { label: string; href: string; icon: typeof Home 
     { label: "Company Dashboard", href: "/dashboard", icon: Home },
     { label: "Projects", href: "/dashboard/projects", icon: Building2 },
     { label: "Inventory", href: "/dashboard/inventory", icon: FolderOpen },
-    { label: "Leads", href: "/dashboard/leads", icon: BriefcaseBusiness },
+    { label: "Lead file", href: "/dashboard/leads", icon: BriefcaseBusiness },
     { label: "Pipeline", href: "/dashboard/pipeline", icon: Columns3 },
     { label: "Follow-ups", href: "/dashboard/followups", icon: CalendarClock },
     { label: "Site Visits", href: "/dashboard/site-visits", icon: CalendarClock },
@@ -34,7 +34,7 @@ const navigation: Record<Role, { label: string; href: string; icon: typeof Home 
   ],
   sales: [
     { label: "My Dashboard", href: "/dashboard", icon: Home },
-    { label: "My Leads", href: "/dashboard/leads", icon: BriefcaseBusiness },
+    { label: "My lead file", href: "/dashboard/leads", icon: BriefcaseBusiness },
     { label: "Pipeline", href: "/dashboard/pipeline", icon: Columns3 },
     { label: "Today Follow-ups", href: "/dashboard/followups", icon: CalendarClock },
     { label: "Site Visits", href: "/dashboard/site-visits", icon: CalendarClock },
@@ -76,58 +76,58 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const roleNavigation = navigation[user.role];
 
   return (
-    <div className="min-h-screen bg-[#f7f8fa]">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-slate-100 bg-white lg:flex lg:flex-col">
-        <div className="flex h-20 shrink-0 items-center gap-3 px-7 text-lg font-semibold">
-          <span className="rounded-xl bg-brand-50 p-2 text-brand-600"><Building2 className="h-6 w-6" /></span>
+    <div className="min-h-screen">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 bg-brand-800 lg:flex lg:flex-col">
+        <div className="flex h-20 shrink-0 items-center gap-3 px-7 text-lg font-semibold text-white">
+          <span className="rounded-xl bg-white/10 p-2 text-gold"><Building2 className="h-6 w-6" /></span>
           EstateFlow
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-          <p className="px-3 pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400">{roleLabels[user.role]}</p>
+          <p className="px-3 pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white/40">{roleLabels[user.role]}</p>
           <nav className="space-y-1">
             {roleNavigation.map(({ href, label, icon: Icon }) => {
               const active = pathname === href;
               return (
-                <Link key={href} href={href} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${active ? "bg-brand-50 text-brand-700" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
+                <Link key={href} href={href} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${active ? "bg-brand-600 text-white shadow-sm" : "text-white/70 hover:bg-white/10 hover:text-white"}`}>
                   <Icon className="h-[18px] w-[18px]" /> {label}
                 </Link>
               );
             })}
           </nav>
         </div>
-        <div className="shrink-0 border-t border-slate-100 bg-white p-4">
-          <button onClick={handleSignOut} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-50">
+        <div className="shrink-0 border-t border-white/10 p-4">
+          <button onClick={handleSignOut} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/70 hover:bg-white/10">
             <LogOut className="h-[18px] w-[18px]" /> Sign out
           </button>
         </div>
       </aside>
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden" onClick={() => setMobileMenuOpen(false)}>
-          <aside className="flex h-full w-[min(20rem,86vw)] flex-col bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
-            <div className="flex h-20 shrink-0 items-center justify-between gap-3 px-5 text-lg font-semibold">
+        <div className="fixed inset-0 z-40 bg-ink/40 lg:hidden" onClick={() => setMobileMenuOpen(false)}>
+          <aside className="flex h-full w-[min(20rem,86vw)] flex-col bg-brand-800 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex h-20 shrink-0 items-center justify-between gap-3 px-5 text-lg font-semibold text-white">
               <span className="flex items-center gap-3">
-                <span className="rounded-xl bg-brand-50 p-2 text-brand-600"><Building2 className="h-6 w-6" /></span>
+                <span className="rounded-xl bg-white/10 p-2 text-gold"><Building2 className="h-6 w-6" /></span>
                 EstateFlow
               </span>
-              <button onClick={() => setMobileMenuOpen(false)} className="rounded-xl border border-slate-100 p-2 text-slate-500">
+              <button onClick={() => setMobileMenuOpen(false)} className="rounded-xl border border-white/10 p-2 text-white/70">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-              <p className="px-3 pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400">{roleLabels[user.role]}</p>
+              <p className="px-3 pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white/40">{roleLabels[user.role]}</p>
               <nav className="space-y-1">
                 {roleNavigation.map(({ href, label, icon: Icon }) => {
                   const active = pathname === href;
                   return (
-                    <Link onClick={() => setMobileMenuOpen(false)} key={href} href={href} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${active ? "bg-brand-50 text-brand-700" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
+                    <Link onClick={() => setMobileMenuOpen(false)} key={href} href={href} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${active ? "bg-brand-600 text-white shadow-sm" : "text-white/70 hover:bg-white/10 hover:text-white"}`}>
                       <Icon className="h-[18px] w-[18px]" /> {label}
                     </Link>
                   );
                 })}
               </nav>
             </div>
-            <div className="shrink-0 border-t border-slate-100 bg-white p-4">
-              <button onClick={handleSignOut} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+            <div className="shrink-0 border-t border-white/10 p-4">
+              <button onClick={handleSignOut} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-white/80 hover:bg-white/10">
                 <LogOut className="h-[18px] w-[18px]" /> Sign out
               </button>
             </div>

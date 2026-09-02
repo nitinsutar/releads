@@ -5,22 +5,24 @@ export function Heading({ title, description, action }: { title: string; descrip
   return (
     <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-950">{title}</h1>
-        <p className="mt-1.5 text-sm text-slate-500">{description}</p>
+        <h1 className="text-[1.65rem] font-semibold tracking-tight text-ink">{title}</h1>
+        <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">{description}</p>
       </div>
       {action}
     </div>
   );
 }
 
-export function StatCard({ label, value, hint, icon }: { label: string; value: string | number; hint?: string; icon?: ReactNode }) {
+const tints = ["bg-brand-50 text-brand-700", "bg-sun-50 text-sun-600", "bg-coral-50 text-coral-600", "bg-lilac-50 text-lilac-600", "bg-sky-50 text-sky-600"];
+
+export function StatCard({ label, value, hint, icon, tint = 0 }: { label: string; value: string | number; hint?: string; icon?: ReactNode; tint?: number }) {
   return (
     <div className="card p-5">
-      <div className="flex justify-between">
+      <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-slate-500">{label}</p>
-        {icon && <span className="rounded-lg bg-brand-50 p-2 text-brand-600">{icon}</span>}
+        {icon && <span className={`rounded-xl p-2 ${tints[tint % tints.length]}`}>{icon}</span>}
       </div>
-      <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{value}</p>
+      <p className="mt-3 text-3xl font-semibold tracking-tight text-ink">{value}</p>
       {hint && <p className="mt-2 text-xs text-slate-400">{hint}</p>}
     </div>
   );
@@ -28,17 +30,24 @@ export function StatCard({ label, value, hint, icon }: { label: string; value: s
 
 export function StatusBadge({ status }: { status: LeadStatus }) {
   const style =
-    status === "Booked / Closed" ? "bg-emerald-50 text-emerald-700" :
-    status === "Lost" ? "bg-red-50 text-red-700" :
-    status.includes("Site Visit") ? "bg-purple-50 text-purple-700" :
-    status === "Negotiation" || status === "Booking Pending" ? "bg-amber-50 text-amber-700" :
-    "bg-sky-50 text-sky-700";
-  return <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${style}`}>{status}</span>;
+    status === "Booked / Closed" ? "bg-brand-50 text-brand-700" :
+    status === "Lost" ? "bg-coral-50 text-coral-600" :
+    status.includes("Site Visit") ? "bg-lilac-50 text-lilac-600" :
+    status === "Negotiation" || status === "Booking Pending" ? "bg-sun-50 text-sun-600" :
+    status === "Interested" ? "bg-coral-50 text-coral-600" :
+    "bg-sky-50 text-sky-600";
+  return <span className={`chip whitespace-nowrap ${style}`}>{status}</span>;
 }
 
 export function PriorityBadge({ priority }: { priority: Priority }) {
-  const style = priority === "Hot" ? "bg-red-50 text-red-700" : priority === "Warm" ? "bg-orange-50 text-orange-700" : "bg-slate-100 text-slate-600";
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${style}`}>{priority}</span>;
+  const style = priority === "Hot" ? "bg-coral-50 text-coral-600" : priority === "Warm" ? "bg-sun-50 text-sun-600" : "bg-mist text-slate-600";
+  return <span className={`chip ${style}`}>{priority}</span>;
 }
 
-export const prettyDate = (date?: string) => date ? new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "-";
+export const prettyDate = (date?: string) => {
+  if (!date) return "-";
+  const iso = date.length >= 10 ? date.slice(0, 10) : date;
+  const parsed = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return date;
+  return parsed.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+};

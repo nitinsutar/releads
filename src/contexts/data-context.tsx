@@ -3,13 +3,16 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { seedData } from "@/lib/seed-data";
 import { accessibleLeads, accessibleProjects } from "@/lib/permissions";
+import { isDuplicateLead, phoneDigits } from "@/lib/actions";
+import { CsvDraft } from "@/lib/csv";
 import { Activity, CRMData, CRMUser, Lead, LeadNote, Project, Unit } from "@/lib/types";
 
 interface DataValue {
   data: CRMData;
   leadsFor: (user: CRMUser) => Lead[];
   projectsFor: (user: CRMUser) => Project[];
-  addLead: (user: CRMUser, input: Omit<Lead, "id" | "companyId" | "createdBy" | "createdAt" | "updatedAt">) => void;
+  addLead: (user: CRMUser, input: Omit<Lead, "id" | "companyId" | "createdBy" | "createdAt" | "updatedAt">) => string | void;
+  importLeads: (user: CRMUser, rows: CsvDraft[]) => { imported: number; skipped: number };
   updateLead: (user: CRMUser, leadId: string, updates: Partial<Lead>) => void;
   addNote: (user: CRMUser, leadId: string, text: string) => void;
   scheduleSiteVisit: (user: CRMUser, leadId: string, visitDate: string, notes?: string) => void;
@@ -41,12 +44,61 @@ export function DataProvider({ children }: { children: ReactNode }) {
     leadsFor: (user) => accessibleLeads(data, user),
     projectsFor: (user) => accessibleProjects(data, user),
     addLead: (user, input) => {
-      if (!user.companyId) return;
+      if (!user.companyId) return "No company on this account.";
+      let error: string | undefined;
       change((current) => {
+        const companyLeads = current.leads.filter((lead) => lead.companyId === user.companyId);
+        if (isDuplicateLead(companyLeads, input.phone, input.projectId)) {
+          error = "A lead with this mobile already exists on the same project.";
+          return current;
+        }
         const nextLead: Lead = { ...input, id: `LD-${1000 + current.leads.length + 1}`, companyId: user.companyId!, createdBy: user.id, brokerId: user.role === "broker" ? user.id : input.brokerId, createdAt: today(), updatedAt: today() };
         const activity: Activity = { id: id("act"), leadId: nextLead.id, actorId: user.id, type: "Lead Created", details: `${nextLead.customerName} was added from ${nextLead.source}.`, createdAt: today() };
         return { ...current, leads: [nextLead, ...current.leads], activities: [activity, ...current.activities] };
       });
+      return error;
+    },
+    importLeads: (user, rows) => {
+      if (!user.companyId) return { imported: 0, skipped: rows.length };
+      let imported = 0;
+      let skipped = 0;
+      change((current) => {
+        const projects = current.projects.filter((project) => project.companyId === user.companyId);
+        let leads = current.leads;
+        const activities = [...current.activities];
+        rows.forEach((row) => {
+          const project = projects.find((item) => item.name.toLowerCase() === row.projectName.toLowerCase()) ?? projects[0];
+          if (!project || !row.customerName || !phoneDigits(row.phone)) {
+            skipped += 1;
+            return;
+          }
+          if (isDuplicateLead(leads.filter((lead) => lead.companyId === user.companyId), row.phone, project.id)) {
+            skipped += 1;
+            return;
+          }
+          const nextLead: Lead = {
+            customerName: row.customerName,
+            phone: row.phone,
+            email: row.email,
+            projectId: project.id,
+            source: row.source || "CSV Import",
+            priority: row.priority,
+            status: "New Lead",
+            budgetRange: row.budgetRange,
+            requirement: row.requirement,
+            id: `LD-${1000 + leads.length + 1}`,
+            companyId: user.companyId!,
+            createdBy: user.id,
+            createdAt: today(),
+            updatedAt: today()
+          };
+          imported += 1;
+          leads = [nextLead, ...leads];
+          activities.unshift({ id: id("act"), leadId: nextLead.id, actorId: user.id, type: "Lead Created", details: `${nextLead.customerName} imported from CSV.`, createdAt: today() });
+        });
+        return { ...current, leads, activities };
+      });
+      return { imported, skipped };
     },
     updateLead: (user, leadId, updates) => change((current) => {
       if (!accessibleLeads(current, user).some((lead) => lead.id === leadId)) return current;
