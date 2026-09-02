@@ -4,6 +4,7 @@ import { createContext, ReactNode, useContext, useEffect, useMemo, useState } fr
 import { seedData } from "@/lib/seed-data";
 import { CRMUser } from "@/lib/types";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { mapUser } from "@/lib/mappers";
 
 interface AuthValue {
   user: CRMUser | null;
@@ -17,6 +18,12 @@ const AuthContext = createContext<AuthValue | undefined>(undefined);
 const sessionKey = "estateflow-session";
 const useSupabase = isSupabaseConfigured && process.env.NEXT_PUBLIC_DEMO_MODE !== "true";
 
+async function profileFromSession(userId: string) {
+  if (!supabase) return null;
+  const { data } = await supabase.from("users").select("*").eq("auth_id", userId).eq("active", true).maybeSingle();
+  return data ? mapUser(data as Record<string, unknown>) : null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CRMUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,10 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const restore = async () => {
       if (useSupabase && supabase) {
         const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          const { data: profile } = await supabase.from("users").select("*").eq("auth_id", data.session.user.id).single();
-          if (profile) setUser(profile as CRMUser);
-        }
+        if (data.session) setUser(await profileFromSession(data.session.user.id));
       } else {
         const id = window.localStorage.getItem(sessionKey);
         setUser(seedData.users.find((candidate) => candidate.id === id) ?? null);
@@ -46,9 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (useSupabase && supabase) {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error || !data.user) return error?.message ?? "Unable to sign in.";
-        const { data: profile, error: profileError } = await supabase.from("users").select("*").eq("auth_id", data.user.id).single();
-        if (profileError || !profile) return "No CRM profile is connected to this account.";
-        setUser(profile as CRMUser);
+        const profile = await profileFromSession(data.user.id);
+        if (!profile) return "No CRM profile is connected to this account.";
+        setUser(profile);
         return null;
       }
       const found = seedData.users.find((candidate) => candidate.email.toLowerCase() === email.toLowerCase() && candidate.password === password && candidate.active);

@@ -9,7 +9,7 @@ import { Lead } from "@/lib/types";
 
 export default function FollowupsPage() {
   const { user } = useAuth();
-  const { data, leadsFor } = useCRMData();
+  const { data, leadsFor, completeFollowup, snoozeFollowup } = useCRMData();
   if (!user) return null;
 
   const today = new Date().toISOString().slice(0, 10);
@@ -27,15 +27,15 @@ export default function FollowupsPage() {
         <StatCard label="Upcoming" value={upcoming.length} hint="Scheduled after today" />
       </div>
       <div className="mt-7 grid gap-6 xl:grid-cols-3">
-        <FollowupColumn title="Due today" leads={todays} data={data} empty="Nothing due today." />
-        <FollowupColumn title="Overdue" leads={overdue} data={data} empty="No overdue follow-ups." danger />
-        <FollowupColumn title="Upcoming" leads={upcoming.slice(0, 8)} data={data} empty="No upcoming follow-ups." />
+        <FollowupColumn title="Due today" leads={todays} data={data} empty="Nothing due today." onDone={(leadId) => completeFollowup(user, leadId)} onSnooze={(leadId) => snoozeFollowup(user, leadId, 1)} />
+        <FollowupColumn title="Overdue" leads={overdue} data={data} empty="No overdue follow-ups." danger onDone={(leadId) => completeFollowup(user, leadId)} onSnooze={(leadId) => snoozeFollowup(user, leadId, 1)} />
+        <FollowupColumn title="Upcoming" leads={upcoming.slice(0, 8)} data={data} empty="No upcoming follow-ups." onDone={(leadId) => completeFollowup(user, leadId)} onSnooze={(leadId) => snoozeFollowup(user, leadId, 1)} />
       </div>
     </>
   );
 }
 
-function FollowupColumn({ title, leads, data, empty, danger }: { title: string; leads: Lead[]; data: ReturnType<typeof useCRMData>["data"]; empty: string; danger?: boolean }) {
+function FollowupColumn({ title, leads, data, empty, danger, onDone, onSnooze }: { title: string; leads: Lead[]; data: ReturnType<typeof useCRMData>["data"]; empty: string; danger?: boolean; onDone: (leadId: string) => void; onSnooze: (leadId: string) => void }) {
   return (
     <section className="card overflow-hidden">
       <div className="border-b border-slate-100 p-5">
@@ -56,6 +56,10 @@ function FollowupColumn({ title, leads, data, empty, danger }: { title: string; 
               <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">{prettyDate(lead.followupDate)}</span>
             </div>
             <p className="mt-3 text-xs text-slate-500">Owner: {data.users.find((member) => member.id === lead.assignedTo)?.name ?? "Unassigned"}</p>
+            <div className="mt-4 flex gap-2">
+              <button className="btn-primary" onClick={() => onDone(lead.id)}>Done</button>
+              <button className="btn-secondary" onClick={() => onSnooze(lead.id)}>Snooze 1 day</button>
+            </div>
           </article>
         ))}
         {!leads.length && <p className="p-6 text-sm text-slate-400">{empty}</p>}
