@@ -5,7 +5,8 @@ import { seedData } from "@/lib/seed-data";
 import { accessibleLeads, accessibleProjects } from "@/lib/permissions";
 import { isDuplicateLead, phoneDigits } from "@/lib/actions";
 import { CsvDraft } from "@/lib/csv";
-import { Activity, CRMData, CRMUser, Lead, LeadNote, Project, Unit } from "@/lib/types";
+import { CRM_DATA_KEY, generatePassword } from "@/lib/accounts";
+import { Activity, CRMData, CRMUser, Lead, LeadNote, Project, Role, Unit } from "@/lib/types";
 
 interface DataValue {
   data: CRMData;
@@ -22,13 +23,16 @@ interface DataValue {
   addDocumentPlaceholder: (user: CRMUser, leadId: string, name: string) => void;
   addProject: (user: CRMUser, input: Omit<Project, "id" | "companyId">) => void;
   addUnit: (user: CRMUser, input: Omit<Unit, "id" | "companyId">) => void;
-  addTeamUser: (user: CRMUser, input: Pick<CRMUser, "name" | "email" | "phone" | "role">) => void;
+  addTeamUser: (user: CRMUser, input: Pick<CRMUser, "name" | "email" | "phone" | "role">) => { error?: string; user?: CRMUser; password?: string };
   addCompany: (input: Omit<CRMData["companies"][number], "id">) => void;
+  provisionBuilder: (input: { companyName: string; city: string; phone: string; ownerName: string; ownerEmail: string; ownerPhone: string }) => { error?: string; password?: string; user?: CRMUser; companyName?: string };
+  provisionUser: (actor: CRMUser, input: { companyId: string; name: string; email: string; phone: string; role: Role }) => { error?: string; password?: string; user?: CRMUser };
+  resetPassword: (actor: CRMUser, userId: string) => { error?: string; password?: string; user?: CRMUser };
   resetDemoData: () => void;
 }
 
 const DataContext = createContext<DataValue | undefined>(undefined);
-const dataKey = "estateflow-crm-data-v1";
+const dataKey = CRM_DATA_KEY;
 const id = (prefix: string) => `${prefix}_${Date.now().toString(36)}`;
 const today = () => new Date().toISOString().slice(0, 10);
 const normalizeData = (input: CRMData): CRMData => ({ ...seedData, ...input, siteVisits: input.siteVisits ?? seedData.siteVisits, bookings: input.bookings ?? seedData.bookings, brokerCommissions: input.brokerCommissions ?? seedData.brokerCommissions, customerDocuments: input.customerDocuments ?? seedData.customerDocuments });
@@ -38,6 +42,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => { const stored = window.localStorage.getItem(dataKey); if (stored) setData(normalizeData(JSON.parse(stored) as CRMData)); }, []);
   useEffect(() => { window.localStorage.setItem(dataKey, JSON.stringify(data)); }, [data]);
   const change = (updater: (current: CRMData) => CRMData) => setData((current) => updater(current));
+  const emailTaken = (email: string, users: CRMUser[]) => users.some((member) => member.email.toLowerCase() === email.trim().toLowerCase());
 
   const value = useMemo<DataValue>(() => ({
     data,
@@ -76,22 +81,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             skipped += 1;
             return;
           }
-          const nextLead: Lead = {
-            customerName: row.customerName,
-            phone: row.phone,
-            email: row.email,
-            projectId: project.id,
-            source: row.source || "CSV Import",
-            priority: row.priority,
-            status: "New Lead",
-            budgetRange: row.budgetRange,
-            requirement: row.requirement,
-            id: `LD-${1000 + leads.length + 1}`,
-            companyId: user.companyId!,
-            createdBy: user.id,
-            createdAt: today(),
-            updatedAt: today()
-          };
+          const nextLead: Lead = { customerName: row.customerName, phone: row.phone, email: row.email, projectId: project.id, source: row.source || "CSV Import", priority: row.priority, status: "New Lead", budgetRange: row.budgetRange, requirement: row.requirement, id: `LD-${1000 + leads.length + 1}`, companyId: user.companyId!, createdBy: user.id, createdAt: today(), updatedAt: today() };
           imported += 1;
           leads = [nextLead, ...leads];
           activities.unshift({ id: id("act"), leadId: nextLead.id, actorId: user.id, type: "Lead Created", details: `${nextLead.customerName} imported from CSV.`, createdAt: today() });
@@ -149,8 +139,47 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }),
     addProject: (user, input) => { if (!user.companyId) return; change((current) => ({ ...current, projects: [{ ...input, id: id("prj"), companyId: user.companyId! }, ...current.projects] })); },
     addUnit: (user, input) => { if (!user.companyId) return; change((current) => ({ ...current, units: [{ ...input, id: id("unit"), companyId: user.companyId! }, ...current.units] })); },
-    addTeamUser: (user, input) => { if (!user.companyId) return; change((current) => ({ ...current, users: [{ ...input, id: id("usr"), companyId: user.companyId!, password: "demo123", active: true }, ...current.users] })); },
+    addTeamUser: (user, input) => {
+      if (!user.companyId) return { error: "This account is not linked to a company." };
+      if (emailTaken(input.email, data.users)) return { error: "That email already has a login." };
+      const password = generatePassword();
+      const next: CRMUser = { ...input, email: input.email.trim().toLowerCase(), id: id("usr"), companyId: user.companyId, password, active: true };
+      change((current) => ({ ...current, users: [next, ...current.users] }));
+      return { password, user: next };
+    },
     addCompany: (input) => change((current) => ({ ...current, companies: [{ ...input, id: id("cmp") }, ...current.companies] })),
+    provisionBuilder: (input) => {
+      const email = input.ownerEmail.trim().toLowerCase();
+      if (data.users.some((member) => member.email.toLowerCase() === email)) return { error: "That email already has a login." };
+      const password = generatePassword();
+      const companyId = id("cmp");
+      const owner: CRMUser = { id: id("usr"), companyId, name: input.ownerName.trim(), email, phone: input.ownerPhone.trim(), role: "builder_admin", password, active: true };
+      change((current) => ({
+        ...current,
+        companies: [{ id: companyId, name: input.companyName.trim(), city: input.city.trim(), email, phone: input.phone.trim(), plan: "Trial", paymentStatus: "Trial", active: true }, ...current.companies],
+        users: [owner, ...current.users]
+      }));
+      return { password, user: owner, companyName: input.companyName.trim() };
+    },
+    provisionUser: (actor, input) => {
+      const allowed = actor.role === "super_admin" || (actor.role === "builder_admin" && actor.companyId === input.companyId && (input.role === "sales" || input.role === "broker" || input.role === "customer"));
+      if (!allowed) return { error: "You cannot create that login." };
+      const email = input.email.trim().toLowerCase();
+      if (data.users.some((member) => member.email.toLowerCase() === email)) return { error: "That email already has a login." };
+      const password = generatePassword();
+      const next: CRMUser = { id: id("usr"), companyId: input.companyId, name: input.name.trim(), email, phone: input.phone.trim(), role: input.role, password, active: true };
+      change((current) => ({ ...current, users: [next, ...current.users] }));
+      return { password, user: next };
+    },
+    resetPassword: (actor, userId) => {
+      const target = data.users.find((member) => member.id === userId);
+      if (!target) return { error: "Account not found." };
+      const allowed = actor.role === "super_admin" || (actor.role === "builder_admin" && actor.companyId === target.companyId);
+      if (!allowed) return { error: "You cannot reset that password." };
+      const password = generatePassword();
+      change((current) => ({ ...current, users: current.users.map((member) => member.id === userId ? { ...member, password } : member) }));
+      return { password, user: { ...target, password } };
+    },
     resetDemoData: () => setData(seedData)
   }), [data]);
 
