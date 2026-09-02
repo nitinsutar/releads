@@ -8,19 +8,19 @@
 4. Duplicate lead check, follow-up done/snooze, file uploads.
 5. Align SQL schema with the UI.
 
-Do **not** block this work on billing.
+Domain connection and Dodo Payments stay last. Do not block this work on billing or custom domain.
 
-## Last — Dodo Payments
+### Persistence shipped on this branch
+- `/api/crm` loads and mutates tenant data through Supabase RLS
+- DataProvider uses the API when `NEXT_PUBLIC_DEMO_MODE=false`
+- Duplicate check: same company + project + last 10 phone digits, excluding Lost
+- Follow-up Done / Snooze 1 day
+- Team add invites via `/api/invites` in live mode
+- Run `supabase/migrations/002_sprint_a.sql` after `001_initial_schema.sql`
+
+## Last — custom domain, then Dodo Payments
 
 Payment gateway is decided: **Dodo Payments** (INR, UPI + Indian cards, subscriptions).
-
-Leave it until the live CRM is usable by a real builder team.
-
-Already sketched, finish later:
-- `/api/billing/checkout`
-- `/api/billing/webhook`
-- `src/lib/billing.ts` plans (Trial / Growth / Pro)
-- Company fields `dodo_customer_id`, `dodo_subscription_id`
 
 Needed only at that step:
 - `DODO_PAYMENTS_API_KEY`
