@@ -10,6 +10,14 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 html,
@@ -56,12 +64,6 @@ body {
   }
 }
 
-.scrollbar-thin::-webkit-scrollbar {
-  height: 8px;
-  width: 8px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #d7e3dd;
-  border-radius: 999px;
+.scrollbar-thin {
+  scrollbar-width: none;
 }
