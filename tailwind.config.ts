@@ -5,7 +5,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-plus-jakarta)", "Inter", "ui-sans-serif", "system-ui", "sans-serif"]
+        sans: ["var(--font-plus-jakarta)", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["var(--font-fraunces)", "Georgia", "serif"]
       },
       colors: {
         paper: "#F4F1EA",

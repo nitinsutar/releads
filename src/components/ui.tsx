@@ -5,7 +5,7 @@ export function Heading({ title, description, action }: { title: string; descrip
   return (
     <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-[1.65rem] font-semibold tracking-tight text-ink">{title}</h1>
+        <h1 className="font-display text-[1.85rem] font-semibold tracking-tight text-ink">{title}</h1>
         <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">{description}</p>
       </div>
       {action}
