@@ -37,11 +37,11 @@ export default function LoginPage() {
           EstateFlow CRM
         </div>
         <div className="max-w-xl">
-          <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-[#dbb873]">Real Estate Lead Management CRM</p>
-          <h1 className="text-5xl font-semibold leading-tight">Turn every enquiry into a guided sale.</h1>
-          <p className="mt-6 text-lg leading-relaxed text-emerald-50/75">A premium workspace for Indian builders, sales teams and channel partners to track every prospect from first call to booking.</p>
+          <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-[#dbb873]">Built for Indian builders</p>
+          <h1 className="text-5xl font-semibold leading-tight">Every enquiry, one clean sales habit.</h1>
+          <p className="mt-6 text-lg leading-relaxed text-emerald-50/75">Call, WhatsApp, follow up and book — without losing a number in a spreadsheet.</p>
           <div className="mt-10 grid gap-4 text-sm text-emerald-50/90 sm:grid-cols-2">
-            {["Role-based workspaces", "Lead pipeline tracking", "Follow-up discipline", "Broker performance"].map((item) => (
+            {["Role-based workspaces", "Lead pipeline tracking", "Morning huddle", "Broker performance"].map((item) => (
               <div key={item} className="flex gap-2"><CheckCircle2 className="h-5 w-5 shrink-0 text-[#dbb873]" />{item}</div>
             ))}
           </div>
