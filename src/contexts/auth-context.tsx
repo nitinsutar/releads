@@ -1,9 +1,9 @@
 "use client";
 
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
-import { seedData } from "@/lib/seed-data";
 import { CRMUser } from "@/lib/types";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { workspaceUsers } from "@/lib/accounts";
 
 interface AuthValue {
   user: CRMUser | null;
@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } else {
         const id = window.localStorage.getItem(sessionKey);
-        setUser(seedData.users.find((candidate) => candidate.id === id) ?? null);
+        setUser(workspaceUsers().find((candidate) => candidate.id === id) ?? null);
       }
       setLoading(false);
     };
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(profile as CRMUser);
         return null;
       }
-      const found = seedData.users.find((candidate) => candidate.email.toLowerCase() === email.toLowerCase() && candidate.password === password && candidate.active);
+      const found = workspaceUsers().find((candidate) => candidate.email.toLowerCase() === email.trim().toLowerCase() && candidate.password === password && candidate.active);
       if (!found) return "Invalid email or password.";
       window.localStorage.setItem(sessionKey, found.id);
       setUser(found);
