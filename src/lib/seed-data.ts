@@ -30,9 +30,9 @@ export const seedData: CRMData = {
     { id: "prj_palm", companyId: "cmp_nest", name: "Palm Avenue", city: "Pune", location: "Wakad", status: "Planning", brochureUrl: "#", units: 96, availableUnits: 96 }
   ],
   units: [
-    { id: "unit_a1204", companyId: "cmp_arihant", projectId: "prj_sky", unitNumber: "A-1204", type: "2BHK", price: "INR 1.85 Cr", status: "Available" },
-    { id: "unit_b902", companyId: "cmp_arihant", projectId: "prj_sky", unitNumber: "B-902", type: "3BHK", price: "INR 2.65 Cr", status: "On Hold" },
-    { id: "unit_h504", companyId: "cmp_arihant", projectId: "prj_harbor", unitNumber: "H-504", type: "2BHK", price: "INR 1.42 Cr", status: "Available" }
+    { id: "unit_a1204", companyId: "cmp_arihant", projectId: "prj_sky", unitNumber: "A-1204", type: "2BHK", areaSqft: 863, price: "INR 1.85 Cr", status: "Available" },
+    { id: "unit_b902", companyId: "cmp_arihant", projectId: "prj_sky", unitNumber: "B-902", type: "3BHK", areaSqft: 1180, price: "INR 2.65 Cr", status: "On Hold" },
+    { id: "unit_h504", companyId: "cmp_arihant", projectId: "prj_harbor", unitNumber: "H-504", type: "2BHK", areaSqft: 790, price: "INR 1.42 Cr", status: "Available" }
   ],
   leads: [
     { id: "LD-1001", companyId: "cmp_arihant", customerId: "usr_customer", customerName: "Ananya Iyer", phone: "+91 98201 44320", email: "customer@example.com", projectId: "prj_sky", unitId: "unit_a1204", source: "Website", createdBy: "usr_broker", assignedTo: "usr_sales", brokerId: "usr_broker", priority: "Hot", status: "Site Visit Scheduled", followupDate: today, siteVisitDate: dateFromToday(2), lastContactedDate: dateFromToday(-1), budgetRange: "INR 1.5 - 2 Cr", requirement: "2BHK", createdAt: dateFromToday(-8), updatedAt: dateFromToday(-1) },
